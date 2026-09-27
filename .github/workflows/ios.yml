@@ -64,6 +64,18 @@ jobs:
           # pipefail makes this step fail when xcodebuild fails. xcbeautify only formats
           # output and puts compile errors inline on the PR / commit.
 
+      # Job logs need repo-admin auth to download, but annotations are public on a
+      # public repo. So on failure, each compiler error is re-published with the
+      # following lines (the "note: candidate …" hints) as a notice annotation.
+      - name: Publish compiler error context
+        if: failure()
+        run: |
+          [ -f xcodebuild.log ] || exit 0
+          grep -n -E ": error: " xcodebuild.log | sort -t: -k2 -u | head -10 | cut -d: -f1 | while read -r n; do
+            ctx=$(sed -n "${n},$((n + 12))p" xcodebuild.log | sed -e 's/%/%25/g' | awk '{ printf "%s%%0A", $0 }')
+            echo "::notice title=Compiler error context (log line $n)::$ctx"
+          done
+
       - name: Capture screenshots
         if: success()
         run: |

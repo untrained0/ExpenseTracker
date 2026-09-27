@@ -108,11 +108,13 @@ One-time install. Visual Studio Build Tools 2022 (C++ tools + Windows SDK) is a 
 winget install --id Swift.Toolchain -e
 ```
 
-Open a **new** terminal (so `swift` is on PATH), then from the repo root:
+Then from the repo root, in any PowerShell window:
 
 ```powershell
-swift test
+powershell -ExecutionPolicy Bypass -File .\scripts\test-windows.ps1
 ```
+
+The script loads the Visual Studio developer environment, because Swift on Windows needs MSVC's `link.exe`. It also reloads `PATH` and `SDKROOT`, so it works even in a terminal opened before Swift was installed. Running plain `swift test` fails with *"could not find CLI tool `link`"* or *"unable to load standard library"* unless you're in a *Developer PowerShell for VS 2022* opened after the install.
 
 `Package.swift` compiles only the platform-independent files, in place. **When you add a new file that doesn't depend on Apple frameworks, add it to `sources` in `Package.swift`** so it's tested on Windows too.
 

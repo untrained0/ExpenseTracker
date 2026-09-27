@@ -78,7 +78,12 @@
 
 | Run | Commit | Result | Notes |
 |---|---|---|---|
-| #1 | `90dea31` | ❌ compile error | `LogExpenseIntent`: `.result(dialog:view:)` → "extra argument 'view'" on the iOS 26 SDK. Switched to the `.result(dialog:) { SnippetView }` trailing-closure form. Everything else compiled. |
+| #1 | `90dea31` | ❌ compile error | `LogExpenseIntent`: `.result(dialog:view:)` → "extra argument 'view'". Everything else compiled. |
+| #2 | `30228ea` | ❌ compile error | Trailing-closure form → "no exact matches". **Root cause:** the snippet overloads of `.result` live in the AppIntents × SwiftUI cross-import overlay, which only loads when the file imports **both** modules. Fixed by adding `import SwiftUI` to `LogExpenseIntent.swift`. |
+
+**Windows logic tests:** 17/17 pass on Swift 6.4 (`scripts/test-windows.ps1`, 2026-09-27).
+
+**CI diagnostics:** job logs need admin auth to download, but annotations on a public repo are readable without login (`GET /repos/untrained0/ExpenseTracker/check-runs/{job_id}/annotations`). On failure, the workflow re-publishes each compiler error plus the next 12 lines as `notice` annotations.
 
 **Accepted warnings:** 10× "`KeyPath<Expense, Date>` does not conform to `Sendable`" come from Apple's `#Predicate` macro expansion in `ExpenseRepository.expenses(in:)`. This is an SDK issue we can't fix from our code. Revisit when moving to Swift 6 language mode.
 

@@ -1,5 +1,8 @@
 import AppIntents
 import Foundation
+// Required: the snippet-view overloads of `.result(...)` live in the AppIntents × SwiftUI
+// cross-import overlay, which only loads when both modules are imported in this file.
+import SwiftUI
 
 /// **Action Button, option B: log without opening the app.**
 ///
@@ -59,8 +62,6 @@ struct LogExpenseIntent: AppIntent {
         let formatted = value.currencyFormatted()
         let snippetNote = note?.nilIfBlank
         let category = category
-        // The iOS 26 SDK only resolves the @ViewBuilder `content:` overload here.
-        // `.result(dialog:view:)` fails with "extra argument 'view'" (CI run #1).
         return .result(dialog: IntentDialog("Logged \(formatted) for \(category.title).")) {
             ExpenseSnippetView(
                 amount: value,
