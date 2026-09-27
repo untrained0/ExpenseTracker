@@ -23,7 +23,7 @@
   - `Package.swift`: SwiftPM package that compiles only the platform-independent files **in place** (`AppRouter`, `ExpenseCategory`, `AmountInput`, `Calendar+Month`, `Formatters`) as module `ExpenseTracker`, plus `AmountInputTests` and `AppRouterTests`. Run with `swift test`. New Apple-independent files must be added to its `sources`.
   - `.github/workflows/ios.yml`: runs on `macos-26`. XcodeGen → `xcodebuild test` on an iPhone 17 Pro Max simulator (falls back to any iPhone), then installs the app and takes 3 screenshots (dashboard, Add Expense via deep link, dark mode). Artifacts: `screenshots`, `test-results`.
   - Swift toolchain 6.4.0 installed on the dev PC via winget. VS Build Tools 2022 (MSVC + SDK 10.0.26100) was already present.
-  - git initialized on `main`. `.gitattributes` forces LF. No remote yet.
+  - git on `main`, `.gitattributes` forces LF. Remote: **https://github.com/untrained0/ExpenseTracker** (public, so CI minutes are free). First push: `90dea31`.
 
 ### Phase 1: Core data & UI
 | File | What it does |
@@ -74,9 +74,17 @@
 | 2026-09-27 | Windows testing = SwiftPM logic package + GitHub Actions macOS runner | Only the Apple-free code runs on Windows. The full compile needs macOS, so CI provides it without owning a Mac |
 | 2026-09-27 | Swift 5 mode + complete concurrency checking (not Swift 6 mode) | Avoids hard errors from SwiftData/AppIntents SDK annotations while still surfacing issues as warnings |
 
+## CI history
+
+| Run | Commit | Result | Notes |
+|---|---|---|---|
+| #1 | `90dea31` | ❌ compile error | `LogExpenseIntent`: `.result(dialog:view:)` → "extra argument 'view'" on the iOS 26 SDK. Switched to the `.result(dialog:) { SnippetView }` trailing-closure form. Everything else compiled. |
+
+**Accepted warnings:** 10× "`KeyPath<Expense, Date>` does not conform to `Sendable`" come from Apple's `#Predicate` macro expansion in `ExpenseRepository.expenses(in:)`. This is an SDK issue we can't fix from our code. Revisit when moving to Swift 6 language mode.
+
 ## Known gaps / unverified
 
-1. **Never compiled.** The first Mac build may surface small API mismatches. Most likely spots:
+1. **First full compile ran in CI #1** (one error, since fixed). Still unconfirmed until CI is green:
    - `#Index<Expense>([\.date])` inside the `@Model` (iOS 18 API)
    - `ShortcutTileColor.teal`
    - the `@Parameter(title:requestValueDialog:)` overloads for `Double` / `AppEnum`

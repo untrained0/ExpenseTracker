@@ -57,14 +57,17 @@ struct LogExpenseIntent: AppIntent {
         let monthTotal = try repository.total(in: Calendar.current.monthInterval(containing: .now))
 
         let formatted = value.currencyFormatted()
-        return .result(
-            dialog: IntentDialog("Logged \(formatted) for \(category.title)."),
-            view: ExpenseSnippetView(
+        let snippetNote = note?.nilIfBlank
+        let category = category
+        // The iOS 26 SDK only resolves the @ViewBuilder `content:` overload here.
+        // `.result(dialog:view:)` fails with "extra argument 'view'" (CI run #1).
+        return .result(dialog: IntentDialog("Logged \(formatted) for \(category.title).")) {
+            ExpenseSnippetView(
                 amount: value,
                 category: category,
-                note: note?.nilIfBlank,
+                note: snippetNote,
                 monthTotal: monthTotal
             )
-        )
+        }
     }
 }

@@ -17,7 +17,8 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started
 - [x] Windows testing: `Package.swift` runs the platform-independent logic tests with `swift test`
 - [x] CI: `.github/workflows/ios.yml` builds the full app on a GitHub-hosted Mac, runs all tests on an iPhone Simulator, and uploads screenshots
 - [x] git repo (`main`), `.gitattributes` forcing LF
-- [ ] Push to GitHub and get the first green CI run
+- [x] Push to GitHub (https://github.com/untrained0/ExpenseTracker)
+- [ ] First green CI run
 
 **Done when:** `xcodegen generate` produces a project that opens in Xcode.
 
