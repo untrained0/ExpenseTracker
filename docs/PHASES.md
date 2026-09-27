@@ -19,6 +19,8 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started
 - [x] git repo (`main`), `.gitattributes` forcing LF
 - [x] Push to GitHub (https://github.com/untrained0/ExpenseTracker)
 - [x] First green CI run (#3, `45723f9`)
+- [x] CI builds an unsigned `.ipa` for sideloading onto the iPhone 17 Pro from Windows
+- [ ] First sideload install and the Phase 2 device checklist (docs/SETUP.md §7)
 
 **Done when:** `xcodegen generate` produces a project that opens in Xcode.
 

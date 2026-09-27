@@ -22,7 +22,7 @@ xcodegen generate
 open ExpenseTracker.xcodeproj
 ```
 
-Then open the **ExpenseTracker** target → *Signing & Capabilities* and pick your Team. If the bundle ID is taken, change `com.yourname.expensetracker` in `project.yml` and regenerate.
+Then open the **ExpenseTracker** target → *Signing & Capabilities* and pick your Team. If the bundle ID is taken, change `com.untrained0.expensetracker` in `project.yml` (and `BUNDLE_ID` in the workflow) and regenerate.
 
 ### Option B: Manual Xcode project
 
@@ -138,7 +138,40 @@ git push -u origin main
 
 Runner: `macos-26` (Xcode 26). If GitHub renames or retires that image, update `runs-on` in the workflow.
 
-## 7. Troubleshooting
+## 7. Install on your iPhone from Windows (sideloading)
+
+CI's **Build unsigned IPA** job produces `ExpenseTracker.ipa` on every push. A sideloading tool on Windows re-signs it with your Apple ID and installs it over USB. No Mac is needed.
+
+### One-time setup (PC)
+1. Install **Sideloadly** from its official site, https://sideloadly.io. Follow its Windows prerequisites for Apple's USB drivers. It asks for the iTunes and iCloud installers from Apple's website, **not** the Microsoft Store versions.
+2. Connect the iPhone by USB. Unlock it and tap **Trust This Computer**.
+
+### Every install
+1. GitHub → **Actions** → latest green *iOS CI* run → **Artifacts** → `ExpenseTracker-ipa`. It downloads as a `.zip`, so extract `ExpenseTracker.ipa` from it.
+2. Open Sideloadly, drag in `ExpenseTracker.ipa`, pick your iPhone and enter your Apple ID, then click **Start**. You can use a secondary Apple ID if you prefer. Sideloadly sends the login to Apple to create a free development certificate.
+3. The app icon appears on the Home Screen. The icon is blank until the AppIcon artwork is added.
+
+### First launch only (iPhone)
+1. **Settings → General → VPN & Device Management** → your Apple ID → **Trust**.
+2. Open the app. iOS will say **Developer Mode** is required. Go to **Settings → Privacy & Security → Developer Mode** → On → restart → confirm **Turn On**. The toggle only appears after a developer-signed app has been installed.
+3. Open the app once more so iOS registers its App Shortcuts. Then set up the Action Button (§4).
+
+### Free Apple ID limits
+| Limit | What it means |
+|---|---|
+| Signature expires after **7 days** | The app stops launching. Re-sideload the same or a newer `.ipa`. **Your data survives** as long as you reinstall over the app instead of deleting it. |
+| 3 sideloaded apps at once, 10 new app IDs per week | Only matters if you sideload other apps too |
+| Data lives on the phone only | Deleting the app deletes your expenses. CSV export (Phase 5) or TestFlight (paid) fix this long-term |
+
+### Test checklist (Phase 2 "done when")
+- [ ] Action Button → *Add Expense* with the app **fully closed** (swipe it away first): keypad appears and the caret blinks with no tap
+- [ ] Same with the app already open on the dashboard
+- [ ] Press the Action Button again while the keypad is open: the typed amount is kept
+- [ ] Action Button → *Quick Log*: amount prompt → category list → "Logged ₹… for …" card, and the app stays closed
+- [ ] Open the app: the Quick Log expense is on the dashboard and the month total is updated
+- [ ] Siri: "Log food expense in Expense Tracker"
+
+## 8. Troubleshooting
 
 | Symptom | Fix |
 |---|---|
@@ -149,4 +182,8 @@ Runner: `macos-26` (Xcode 26). If GitHub renames or retires that image, update `
 | Quick Log saved, but the dashboard didn't update | It reloads when the app becomes active. Pull to refresh as a fallback. |
 | Windows: `swift` not recognized | Open a new terminal after installing. The installer updates PATH only for new sessions. |
 | Windows: linker or `ucrt` / `vcruntime` errors | Visual Studio Build Tools needs the *MSVC x64* and *Windows SDK* components. Re-run the VS Installer and add them. |
+| Sideloadly: device not detected | Install the Apple website versions of iTunes and iCloud (not the Microsoft Store ones), replug the cable, and unlock the phone |
+| Sideloadly: "App ID not available" | Someone else registered the bundle ID. Use Sideloadly's *Advanced → Change bundle ID*, or change it in `project.yml` |
+| App opens then closes immediately | The 7-day signature expired, or Developer Mode is off. Re-sideload, or check §7 "First launch" |
+| Expense Tracker missing from the Action Button list | Open the app once after installing, wait ~30 s, and restart the phone if needed. CI fails the build if `Metadata.appintents` is missing, so the metadata is there |
 | CI: "No iPhone simulator found" | The runner image changed. Check `xcrun simctl list` in the log and adjust the jq filter. |

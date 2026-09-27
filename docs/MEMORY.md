@@ -15,7 +15,8 @@
 ## What's implemented
 
 ### Phase 0: Foundation
-- `project.yml` (XcodeGen): app target `ExpenseTracker` (iPhone only, portrait), test target `ExpenseTrackerTests`, Swift 5 mode + `SWIFT_STRICT_CONCURRENCY=complete`, bundle ID `com.yourname.expensetracker` (placeholder).
+- `project.yml` (XcodeGen): app target `ExpenseTracker` (iPhone only, portrait), test target `ExpenseTrackerTests`, Swift 5 mode + `SWIFT_STRICT_CONCURRENCY=complete`, bundle ID `com.untrained0.expensetracker` (changed from the `com.yourname` placeholder on 2026-09-27 so free-Apple-ID signing doesn't collide).
+- **iPhone testing = Route A (sideload from Windows)**, decided 2026-09-27. Device: **iPhone 17 Pro** (has Action Button). The CI job `ipa` builds an unsigned Release `ExpenseTracker.ipa` (artifact `ExpenseTracker-ipa`, 30-day retention) and fails if `Metadata.appintents` is missing. The user installs with Sideloadly and a free Apple ID (7-day re-sign). Guide: docs/SETUP.md §7.
 - `Resources/Info.plist`: hand-maintained (`GENERATE_INFOPLIST_FILE=NO`), with the URL scheme `expensetracker`.
 - `Resources/PrivacyInfo.xcprivacy`: UserDefaults reason CA92.1, no tracking, no collected data.
 - `Resources/Assets.xcassets`: AccentColor (teal `#0FA3A3` / dark `#2DD4BF`), empty AppIcon slots (light/dark/tinted).

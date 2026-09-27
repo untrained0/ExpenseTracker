@@ -3,7 +3,7 @@
 name: ExpenseTracker
 
 options:
-  bundleIdPrefix: com.yourname
+  bundleIdPrefix: com.untrained0
   deploymentTarget:
     iOS: "18.0"
   createIntermediateGroups: true
@@ -26,7 +26,7 @@ targets:
       - path: ExpenseTracker
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.yourname.expensetracker
+        PRODUCT_BUNDLE_IDENTIFIER: com.untrained0.expensetracker
         INFOPLIST_FILE: ExpenseTracker/Resources/Info.plist
         GENERATE_INFOPLIST_FILE: NO
         TARGETED_DEVICE_FAMILY: "1"   # iPhone only
@@ -43,7 +43,7 @@ targets:
       - target: ExpenseTracker
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.yourname.expensetracker.tests
+        PRODUCT_BUNDLE_IDENTIFIER: com.untrained0.expensetracker.tests
         GENERATE_INFOPLIST_FILE: YES
 
 schemes:

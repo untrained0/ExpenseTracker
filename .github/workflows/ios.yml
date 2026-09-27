@@ -1,6 +1,7 @@
 # Builds the full iOS app on a GitHub-hosted Mac, runs all unit tests on an iPhone
-# Simulator, and captures screenshots. Results are downloadable from the run page
-# (Actions tab → run → "Artifacts").
+# Simulator, and captures screenshots. In parallel, it builds an unsigned .ipa for
+# sideloading onto a real iPhone from Windows (docs/SETUP.md §7). Results are
+# downloadable from the run page (Actions tab → run → "Artifacts").
 #
 # Cost: free for public repos. Private repos on the free plan get 2,000 min/month,
 # and macOS minutes count 10×, so budget about 5–10 min per run.
@@ -24,7 +25,7 @@ jobs:
     runs-on: macos-26
     timeout-minutes: 30
     env:
-      BUNDLE_ID: com.yourname.expensetracker   # keep in sync with project.yml
+      BUNDLE_ID: com.untrained0.expensetracker   # keep in sync with project.yml
       DERIVED_DATA: build
 
     steps:
@@ -121,3 +122,56 @@ jobs:
             xcodebuild.log
             TestResults.xcresult
           if-no-files-found: ignore
+
+  # Unsigned device build → ExpenseTracker.ipa, for sideloading from Windows
+  # (Sideloadly / AltStore re-sign it with your Apple ID). Runs in parallel with the
+  # test job. No signing secrets are needed because signing happens on your PC.
+  ipa:
+    name: Build unsigned IPA
+    runs-on: macos-26
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate Xcode project
+        run: |
+          brew install xcodegen xcbeautify
+          xcodegen generate
+
+      - name: Build for iPhone (Release, unsigned)
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project ExpenseTracker.xcodeproj \
+            -scheme ExpenseTracker \
+            -configuration Release \
+            -destination "generic/platform=iOS" \
+            -derivedDataPath build-device \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            2>&1 | tee xcodebuild-device.log | xcbeautify --renderer github-actions
+
+      - name: Package .ipa
+        run: |
+          APP="build-device/Build/Products/Release-iphoneos/ExpenseTracker.app"
+          # Without this metadata, iOS won't register the App Shortcuts, and the app
+          # won't appear under Settings → Action Button → Shortcut.
+          if [ ! -d "$APP/Metadata.appintents" ]; then
+            echo "::error::Metadata.appintents missing from the app bundle, so App Shortcuts won't register"
+            exit 1
+          fi
+          mkdir -p ipa/Payload
+          cp -R "$APP" ipa/Payload/
+          (cd ipa && zip -qry ../ExpenseTracker.ipa Payload)
+          ls -lh ExpenseTracker.ipa
+          echo "::notice title=IPA ready::ExpenseTracker.ipa ($(du -h ExpenseTracker.ipa | cut -f1)), commit ${GITHUB_SHA::7}. Download from this run's Artifacts."
+
+      - name: Upload .ipa
+        uses: actions/upload-artifact@v4
+        with:
+          name: ExpenseTracker-ipa
+          path: ExpenseTracker.ipa
+          retention-days: 30
+          if-no-files-found: error
