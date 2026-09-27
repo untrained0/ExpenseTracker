@@ -1,0 +1,109 @@
+# Builds the full iOS app on a GitHub-hosted Mac, runs all unit tests on an iPhone
+# Simulator, and captures screenshots. Results are downloadable from the run page
+# (Actions tab → run → "Artifacts").
+#
+# Cost: free for public repos. Private repos on the free plan get 2,000 min/month,
+# and macOS minutes count 10×, so budget about 5–10 min per run.
+name: iOS CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:        # "Run workflow" button in the Actions tab
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true  # a new push cancels the in-flight run and saves minutes
+
+jobs:
+  build-and-test:
+    name: Build, test & screenshot
+    runs-on: macos-26
+    timeout-minutes: 30
+    env:
+      BUNDLE_ID: com.yourname.expensetracker   # keep in sync with project.yml
+      DERIVED_DATA: build
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+
+      - name: Generate Xcode project
+        run: |
+          brew install xcodegen xcbeautify
+          xcodegen generate
+
+      - name: Pick iPhone simulator
+        run: |
+          # Prefer iPhone 17 Pro Max, otherwise use the first available iPhone.
+          SIM_ID=$(xcrun simctl list devices available -j | jq -r '
+            [.devices | to_entries[] | select(.key | test("iOS")) | .value[] | select(.name | test("^iPhone"))]
+            | (map(select(.name == "iPhone 17 Pro Max")) + .) | first | .udid')
+          if [ -z "$SIM_ID" ] || [ "$SIM_ID" = "null" ]; then
+            echo "No iPhone simulator found"; xcrun simctl list devices available; exit 1
+          fi
+          echo "Using simulator: $(xcrun simctl list devices | grep "$SIM_ID")"
+          echo "SIM_ID=$SIM_ID" >> "$GITHUB_ENV"
+
+      - name: Build & run unit tests
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project ExpenseTracker.xcodeproj \
+            -scheme ExpenseTracker \
+            -destination "id=$SIM_ID" \
+            -derivedDataPath "$DERIVED_DATA" \
+            -resultBundlePath TestResults.xcresult \
+            CODE_SIGNING_ALLOWED=NO \
+            2>&1 | tee xcodebuild.log | xcbeautify --renderer github-actions
+          # pipefail makes this step fail when xcodebuild fails. xcbeautify only formats
+          # output and puts compile errors inline on the PR / commit.
+
+      - name: Capture screenshots
+        if: success()
+        run: |
+          mkdir -p screenshots
+          APP_PATH="$DERIVED_DATA/Build/Products/Debug-iphonesimulator/ExpenseTracker.app"
+          xcrun simctl boot "$SIM_ID" 2>/dev/null || true
+          xcrun simctl bootstatus "$SIM_ID" -b
+          xcrun simctl status_bar "$SIM_ID" override --time "9:41" --batteryState charged --batteryLevel 100 || true
+          xcrun simctl install "$SIM_ID" "$APP_PATH"
+
+          # 1. Dashboard (empty state on a fresh simulator)
+          xcrun simctl launch "$SIM_ID" "$BUNDLE_ID"
+          sleep 6
+          xcrun simctl io "$SIM_ID" screenshot screenshots/1-dashboard.png
+
+          # 2. Add Expense, opened through the same path the Action Button uses (AppRouter),
+          #    prefilled by deep link. iOS may show an "Open in…" confirmation first.
+          xcrun simctl openurl "$SIM_ID" "expensetracker://add?category=food&amount=250"
+          sleep 4
+          xcrun simctl io "$SIM_ID" screenshot screenshots/2-add-expense.png
+
+          # 3. Dark mode
+          xcrun simctl ui "$SIM_ID" appearance dark
+          sleep 2
+          xcrun simctl io "$SIM_ID" screenshot screenshots/3-add-expense-dark.png
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: screenshots/
+          if-no-files-found: ignore
+
+      - name: Upload build log & test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            xcodebuild.log
+            TestResults.xcresult
+          if-no-files-found: ignore

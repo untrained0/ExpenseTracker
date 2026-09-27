@@ -1,0 +1,18 @@
+# The Xcode project is generated from project.yml by XcodeGen
+ExpenseTracker.xcodeproj/
+
+# Xcode
+xcuserdata/
+DerivedData/
+build/
+*.xcuserstate
+*.xcresult
+
+# Swift Package Manager (Windows/Linux logic tests)
+.build/
+.swiftpm/
+Package.resolved
+
+# macOS / Windows
+.DS_Store
+Thumbs.db

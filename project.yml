@@ -1,0 +1,60 @@
+# XcodeGen spec — run `xcodegen generate` on a Mac to produce ExpenseTracker.xcodeproj.
+# https://github.com/yonaskolb/XcodeGen
+name: ExpenseTracker
+
+options:
+  bundleIdPrefix: com.yourname
+  deploymentTarget:
+    iOS: "18.0"
+  createIntermediateGroups: true
+  developmentLanguage: en
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+    DEVELOPMENT_TEAM: ""            # set your team ID here or in Xcode
+    CODE_SIGN_STYLE: Automatic
+
+targets:
+  ExpenseTracker:
+    type: application
+    platform: iOS
+    sources:
+      - path: ExpenseTracker
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.yourname.expensetracker
+        INFOPLIST_FILE: ExpenseTracker/Resources/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        TARGETED_DEVICE_FAMILY: "1"   # iPhone only
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        ENABLE_PREVIEWS: YES
+
+  ExpenseTrackerTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: ExpenseTrackerTests
+    dependencies:
+      - target: ExpenseTracker
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.yourname.expensetracker.tests
+        GENERATE_INFOPLIST_FILE: YES
+
+schemes:
+  ExpenseTracker:
+    build:
+      targets:
+        ExpenseTracker: all
+        ExpenseTrackerTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - ExpenseTrackerTests

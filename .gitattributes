@@ -1,0 +1,6 @@
+# Always LF, even when checked out on Windows. The CI runner is macOS, and Xcode and
+# shell tooling expect LF.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
