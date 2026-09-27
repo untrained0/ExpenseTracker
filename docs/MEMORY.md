@@ -7,9 +7,9 @@
 | | |
 |---|---|
 | Last updated | 2026-09-27 |
-| Active phase | Phases 0–2 code complete. **Next: first Xcode build + on-device Action Button test**, then Phase 3 |
-| Build verified? | ❌ **No.** Written on Windows, never compiled. See *Known gaps* |
-| Tests | 25 Swift Testing cases written (AmountInput, repository, view models, router), not yet run |
+| Active phase | Phases 0–2 complete and building. **Next: on-device Action Button test**, then Phase 3 |
+| Build verified? | ✅ Compiles in CI (`macos-26`, Xcode 26), run #3 on `45723f9`. Not yet run on a physical iPhone |
+| Tests | 25 Swift Testing cases: all pass on the iOS Simulator (CI). The 17 logic tests also pass on Windows |
 | Min iOS / SDK | iOS 18.0 / Xcode 26 (iOS 26 SDK) |
 
 ## What's implemented
@@ -81,6 +81,10 @@
 | #1 | `90dea31` | ❌ compile error | `LogExpenseIntent`: `.result(dialog:view:)` → "extra argument 'view'". Everything else compiled. |
 | #2 | `30228ea` | ❌ compile error | Trailing-closure form → "no exact matches". **Root cause:** the snippet overloads of `.result` live in the AppIntents × SwiftUI cross-import overlay, which only loads when the file imports **both** modules. Fixed by adding `import SwiftUI` to `LogExpenseIntent.swift`. |
 
+| #3 | `45723f9` | ✅ **green** | Full app compiles on Xcode 26 / iOS 26 SDK. All tests pass on the iPhone Simulator. Screenshots uploaded (dashboard, Add Expense via deep link, dark mode). |
+
+**Harmless log noise:** "Failed to stat path … Application Support/default.store, Sandbox access to file-write-create denied" on the first launch in a fresh simulator. SwiftData creates the store right after. If it ever matters, pre-create `URL.applicationSupportDirectory` in `PersistenceController.makeContainer`.
+
 **Windows logic tests:** 17/17 pass on Swift 6.4 (`scripts/test-windows.ps1`, 2026-09-27).
 
 **CI diagnostics:** job logs need admin auth to download, but annotations on a public repo are readable without login (`GET /repos/untrained0/ExpenseTracker/check-runs/{job_id}/annotations`). On failure, the workflow re-publishes each compiler error plus the next 12 lines as `notice` annotations.
@@ -89,12 +93,8 @@
 
 ## Known gaps / unverified
 
-1. **First full compile ran in CI #1** (one error, since fixed). Still unconfirmed until CI is green:
-   - `#Index<Expense>([\.date])` inside the `@Model` (iOS 18 API)
-   - `ShortcutTileColor.teal`
-   - the `@Parameter(title:requestValueDialog:)` overloads for `Double` / `AppEnum`
-   - `Decimal(string:locale:)` and `url.host()` availability
-2. The Action Button flow hasn't been tested on a device (cold start and warm start).
+1. ~~Compile-time API doubts~~: resolved. CI #3 compiled `#Index`, `ShortcutTileColor.teal`, the `@Parameter` overloads, and the snippet result.
+2. The Action Button flow hasn't been tested on a device (cold start and warm start). CI only checks the same code path through the deep link, which goes through `AppRouter`.
 3. `LogExpenseIntent` writes while the app is backgrounded. The dashboard refreshes on the next activation (by design). Check there's no stale data after a warm resume.
 4. The AppIcon has no artwork yet.
 5. Currency always follows the device locale. There's no override yet (Phase 5).
@@ -102,6 +102,6 @@
 
 ## Next steps
 
-1. On a Mac: `xcodegen generate`, build, fix any compile issues, run ⌘U, and record the results here.
-2. On-device: assign the Action Button to "Add Expense" and to "Quick Log", then go through the Phase 2 "done when" checklist in PHASES.md.
+1. Review the CI screenshots (Actions → latest run → Artifacts → `screenshots`) and note any visual issues.
+2. On-device (needs a Mac, or a sideloaded build): assign the Action Button to "Add Expense" and to "Quick Log", then go through the Phase 2 "done when" checklist in PHASES.md.
 3. Start Phase 3 (edit screen first).

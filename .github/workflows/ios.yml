@@ -9,7 +9,9 @@ name: iOS CI
 on:
   push:
     branches: [main]
+    paths-ignore: ["**.md", "docs/**"]   # docs-only commits don't need a Mac build
   pull_request:
+    paths-ignore: ["**.md", "docs/**"]
   workflow_dispatch:        # "Run workflow" button in the Actions tab
 
 concurrency:

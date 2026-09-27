@@ -18,7 +18,7 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started
 - [x] CI: `.github/workflows/ios.yml` builds the full app on a GitHub-hosted Mac, runs all tests on an iPhone Simulator, and uploads screenshots
 - [x] git repo (`main`), `.gitattributes` forcing LF
 - [x] Push to GitHub (https://github.com/untrained0/ExpenseTracker)
-- [ ] First green CI run
+- [x] First green CI run (#3, `45723f9`)
 
 **Done when:** `xcodegen generate` produces a project that opens in Xcode.
 
