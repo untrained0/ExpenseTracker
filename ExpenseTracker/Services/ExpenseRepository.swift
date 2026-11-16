@@ -2,7 +2,8 @@ import Foundation
 import SwiftData
 
 extension Notification.Name {
-    /// Posted on the main actor after any expense is inserted, updated, or deleted.
+    /// Posted on the main actor after any expense is inserted, updated, or deleted,
+    /// and when the review queue (`PendingTransactionStore`) changes.
     static let expenseStoreDidChange = Notification.Name("ExpenseStoreDidChange")
 }
 
@@ -45,9 +46,12 @@ final class ExpenseRepository {
         return try context.fetch(descriptor)
     }
 
+    /// Money spent in the interval; income is not counted.
     /// Summed in memory because SwiftData can't aggregate `Decimal` in a fetch.
     func total(in interval: DateInterval) throws -> Decimal {
-        try expenses(in: interval).reduce(0) { $0 + $1.amount }
+        try expenses(in: interval)
+            .filter { $0.kind == .expense }
+            .reduce(0) { $0 + $1.amount }
     }
 
     // MARK: Writes
@@ -57,11 +61,12 @@ final class ExpenseRepository {
         amount: Decimal,
         category: ExpenseCategory,
         date: Date = .now,
-        note: String? = nil
+        note: String? = nil,
+        kind: TransactionKind = .expense
     ) throws -> Expense {
         guard amount > 0 else { throw ExpenseRepositoryError.invalidAmount }
 
-        let expense = Expense(amount: amount, date: date, category: category, note: note?.nilIfBlank)
+        let expense = Expense(amount: amount, date: date, category: category, note: note?.nilIfBlank, kind: kind)
         context.insert(expense)
         try saveAndNotify()
         return expense

@@ -18,10 +18,23 @@ struct AddExpenseView: View {
     }
 
     private var isAmountFocused: Bool { !isNoteFocused }
+    private var isExpense: Bool { viewModel.kind == .expense }
+    private var tint: Color { isExpense ? viewModel.category.tint : TransactionKind.incomeTint }
 
     var body: some View {
         VStack(spacing: 16) {
             header
+
+            if let message = viewModel.sourceMessage {
+                // Reviewing a queued bank message: show it, so the amount can be read off.
+                Text(message)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(3)
+                    .padding(.horizontal, 24)
+                    .accessibilityLabel("Bank message: \(message)")
+            }
 
             Spacer(minLength: 0)
 
@@ -30,7 +43,7 @@ struct AddExpenseView: View {
                 currencySymbol: AppCurrency.symbol,
                 isPlaceholder: viewModel.amountInput.isEmpty,
                 isFocused: isAmountFocused,
-                tint: viewModel.category.tint
+                tint: tint
             )
             .contentShape(Rectangle())
             .onTapGesture { isNoteFocused = false }
@@ -39,7 +52,9 @@ struct AddExpenseView: View {
 
             Spacer(minLength: 0)
 
-            CategoryPickerView(selection: $viewModel.category)
+            if isExpense {
+                CategoryPickerView(selection: $viewModel.category)
+            }
 
             if isAmountFocused {
                 KeypadView(
@@ -60,6 +75,7 @@ struct AddExpenseView: View {
         .padding(.top, 8)
         .padding(.bottom, 12)
         .animation(.snappy, value: isNoteFocused)
+        .animation(.snappy, value: viewModel.kind)
         .sensoryFeedback(.impact(weight: .light), trigger: keyPressCount)
         // Once an amount is typed, a stray swipe-down shouldn't throw it away. ✕ still works.
         .interactiveDismissDisabled(!viewModel.amountInput.isEmpty)
@@ -92,7 +108,18 @@ struct AddExpenseView: View {
             }
             .accessibilityLabel("Cancel")
 
-            Spacer()
+            Spacer(minLength: 8)
+
+            Picker("Type", selection: $viewModel.kind) {
+                ForEach(TransactionKind.allCases) { kind in
+                    Text(kind.title).tag(kind)
+                }
+            }
+            .pickerStyle(.segmented)
+            .frame(maxWidth: 180)
+            .accessibilityLabel("Transaction type")
+
+            Spacer(minLength: 8)
 
             DatePicker(
                 "Date",
@@ -101,11 +128,6 @@ struct AddExpenseView: View {
                 displayedComponents: .date
             )
             .labelsHidden()
-        }
-        .overlay {
-            Text("New Expense")
-                .font(.headline)
-                .accessibilityAddTraits(.isHeader)
         }
         .padding(.horizontal, 20)
     }
@@ -134,7 +156,7 @@ struct AddExpenseView: View {
         }
         .buttonStyle(.borderedProminent)
         .buttonBorderShape(.capsule)
-        .tint(viewModel.category.tint)
+        .tint(tint)
         .disabled(!viewModel.canSave)
         .padding(.horizontal, 20)
     }

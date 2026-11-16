@@ -15,7 +15,7 @@ settings:
     SWIFT_STRICT_CONCURRENCY: complete
     MARKETING_VERSION: "1.0.0"
     CURRENT_PROJECT_VERSION: "1"
-    DEVELOPMENT_TEAM: ""            # set your team ID here or in Xcode
+    DEVELOPMENT_TEAM: NCDX6W65V3    # Personal Team (free Apple ID)
     CODE_SIGN_STYLE: Automatic
 
 targets:

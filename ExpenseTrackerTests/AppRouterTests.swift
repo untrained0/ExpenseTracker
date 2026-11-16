@@ -36,6 +36,28 @@ struct AppRouterTests {
         #expect(router.addExpenseRequest?.amount == nil)
     }
 
+    @Test func presentsPendingTransactionForReview() {
+        let router = AppRouter()
+        let pending = PendingTransaction(
+            receivedAt: Date(timeIntervalSince1970: 1_800_000_000),
+            message: "USD 12.99 spent at NETFLIX.COM",
+            amount: Decimal(string: "12.99"),
+            kind: .expense,
+            merchant: "Netflix.com",
+            category: .entertainment
+        )
+        router.presentPending(pending)
+
+        let request = router.addExpenseRequest
+        #expect(request?.pendingID == pending.id)
+        #expect(request?.amount == Decimal(string: "12.99"))
+        #expect(request?.category == .entertainment)
+        #expect(request?.note == "Netflix.com")
+        #expect(request?.date == pending.receivedAt)
+        #expect(request?.sourceMessage == pending.message)
+        #expect(request?.source == .pending)
+    }
+
     @Test func rejectsForeignURLs() {
         let router = AppRouter()
         #expect(router.handle(url: URL(string: "https://example.com/add")!) == false)

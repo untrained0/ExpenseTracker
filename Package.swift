@@ -33,19 +33,27 @@ let package = Package(
             sources: [
                 "App/AppRouter.swift",
                 "Models/ExpenseCategory.swift",
+                "Models/PendingTransaction.swift",
+                "Models/TransactionKind.swift",
                 "Utilities/AmountInput.swift",
                 "Utilities/Calendar+Month.swift",
                 "Utilities/Formatters.swift",
+                "Utilities/MerchantCategorizer.swift",
+                "Utilities/SpendingAnalytics.swift",
+                "Utilities/TransactionMessageParser.swift",
             ]
         ),
         .testTarget(
             name: "ExpenseTrackerLogicTests",
             dependencies: ["ExpenseTracker"],
             path: "ExpenseTrackerTests",
-            exclude: ["ExpenseStoreTests.swift"],  // needs SwiftData (Apple-only)
+            // These need SwiftData (Apple-only).
+            exclude: ["ExpenseStoreTests.swift", "InsightsViewModelTests.swift", "TransactionCaptureTests.swift"],
             sources: [
                 "AmountInputTests.swift",
                 "AppRouterTests.swift",
+                "SpendingAnalyticsTests.swift",
+                "TransactionMessageParserTests.swift",
             ]
         ),
     ],

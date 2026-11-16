@@ -20,7 +20,8 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started
 - [x] Push to GitHub (https://github.com/untrained0/ExpenseTracker)
 - [x] First green CI run (#3, `45723f9`)
 - [x] CI builds an unsigned `.ipa` for sideloading onto the iPhone 17 Pro from Windows
-- [ ] First sideload install and the Phase 2 device checklist (docs/SETUP.md §7)
+- [x] First install on the physical iPhone — done 2026-11-13 via **Xcode on a Mac** (Route C), not the Windows sideload path
+- [ ] Phase 2 device checklist (the Action Button runs themselves)
 
 **Done when:** `xcodegen generate` produces a project that opens in Xcode.
 
@@ -60,12 +61,28 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started
 
 ---
 
-## Phase 3: Editing & insights ⬜
+## Phase 2b: Automatic capture from bank messages 🟡 (code written, pending device test)
+
+**Goal:** Debit and credit alerts log themselves; anything unclear asks, but never in the middle of a game.
+
+- [x] `TransactionMessageParser` + `MerchantCategorizer` (pure, Windows-testable)
+- [x] Income support: `TransactionKind`, `Expense.kindRawValue`, spending totals exclude income, Expense/Income control on the Add sheet
+- [x] `CaptureTransactionIntent` for a Shortcuts Message automation (Shortcut Input → Message)
+- [x] Review queue (`PendingTransactionStore`) + "Needs review" section on the dashboard + local notification prompt
+- [x] Prompt hold with queue: `SetExpensePromptsIntent` (App automations) and `ExpensePromptsFocusFilter` (Gaming Focus), 6-hour expiry
+- [x] In-app "Automatic capture" setup screen (notification permission, steps, release a stuck hold)
+- [ ] Device test: automation delivers the SMS text, prompt notification + tap, hold/release around a game, Focus filter release
+
+**Done when:** a real bank SMS appears on the dashboard without touching the phone, and an unreadable one produces a prompt only after the game is closed.
+
+---
+
+## Phase 3: Editing & insights 🟡
 
 - [ ] Tap a row to edit (reuse `AddExpenseView` in edit mode: `AddExpenseViewModel(expense:)`)
 - [ ] Undo toast after delete / after save from the Action Button
 - [ ] Month switcher (previous months) on the dashboard
-- [ ] Insights screen with Swift Charts: daily spend bars, category donut, month-over-month
+- [x] Insights screen with Swift Charts: month summary (spent, income, net, daily average, change vs last month), daily spend bars, category ranking (bars instead of the planned donut, see MEMORY decisions), six-month trend, month switcher
 - [ ] Search and category filter (`.searchable`)
 - [ ] Liquid Glass polish on iOS 26 (`.glassEffect`, `.buttonStyle(.glassProminent)` behind `if #available(iOS 26, *)`)
 - [ ] Hardware keyboard input on the keypad (`.focusable()` + `.onKeyPress`)

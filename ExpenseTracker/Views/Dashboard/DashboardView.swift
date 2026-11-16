@@ -3,6 +3,8 @@ import SwiftUI
 
 struct DashboardView: View {
     let viewModel: DashboardViewModel
+    let insightsViewModel: InsightsViewModel
+    let captureSetupViewModel: CaptureSetupViewModel
 
     @Environment(AppRouter.self) private var router
 
@@ -20,6 +22,10 @@ struct DashboardView: View {
                     .listRowBackground(Color.clear)
                 }
 
+                if !viewModel.pending.isEmpty {
+                    pendingSection
+                }
+
                 if viewModel.sections.isEmpty {
                     emptyState
                 } else {
@@ -30,6 +36,22 @@ struct DashboardView: View {
             }
             .listStyle(.insetGrouped)
             .navigationTitle("Expenses")
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    NavigationLink {
+                        CaptureSetupView(viewModel: captureSetupViewModel)
+                    } label: {
+                        Label("Automatic capture", systemImage: "envelope.badge")
+                    }
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink {
+                        InsightsView(viewModel: insightsViewModel)
+                    } label: {
+                        Label("Insights", systemImage: "chart.bar.xaxis")
+                    }
+                }
+            }
             .refreshable { viewModel.load() }
             .safeAreaInset(edge: .bottom) { addButton }
             .task { viewModel.load() }
@@ -73,6 +95,30 @@ struct DashboardView: View {
         }
     }
 
+    /// Bank messages that couldn't be logged automatically. Tap to finish one, swipe to drop it.
+    private var pendingSection: some View {
+        Section {
+            ForEach(viewModel.pending) { item in
+                Button {
+                    router.presentPending(item)
+                } label: {
+                    PendingTransactionRow(pending: item)
+                }
+                .buttonStyle(.plain)
+                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                    Button(role: .destructive) {
+                        viewModel.ignorePending(item)
+                    } label: {
+                        Label("Ignore", systemImage: "xmark")
+                    }
+                }
+            }
+        } header: {
+            Text("Needs review")
+                .textCase(nil)
+        }
+    }
+
     private var emptyState: some View {
         Section {
             ContentUnavailableView {
@@ -102,7 +148,21 @@ struct DashboardView: View {
 
 #if DEBUG
 #Preview {
-    DashboardView(viewModel: DashboardViewModel(repository: PreviewData.repository))
-        .environment(AppRouter())
+    let prompter = TransactionPromptNotifier()
+    let pendingStore = PendingTransactionStore()
+    DashboardView(
+        viewModel: DashboardViewModel(repository: PreviewData.repository),
+        insightsViewModel: InsightsViewModel(repository: PreviewData.repository),
+        captureSetupViewModel: CaptureSetupViewModel(
+            prompter: prompter,
+            pendingStore: pendingStore,
+            captureService: TransactionCaptureService(
+                repository: PreviewData.repository,
+                pendingStore: pendingStore,
+                prompter: prompter
+            )
+        )
+    )
+    .environment(AppRouter())
 }
 #endif

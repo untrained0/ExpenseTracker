@@ -7,17 +7,8 @@ struct DaySection: Identifiable {
     let id: Date
     let title: String
     let expenses: [Expense]
+    /// Money spent that day. Income rows are listed but not added in.
     let total: Decimal
-}
-
-/// One category's share of the month's spending.
-struct CategoryTotal: Identifiable, Equatable {
-    let category: ExpenseCategory
-    let total: Decimal
-    /// 0...1 fraction of the month total.
-    let share: Double
-
-    var id: ExpenseCategory { category }
 }
 
 @MainActor
@@ -29,19 +20,24 @@ final class DashboardViewModel {
     private(set) var monthCount = 0
     private(set) var categoryTotals: [CategoryTotal] = []
     private(set) var sections: [DaySection] = []
+    /// Bank messages waiting for review, oldest first.
+    private(set) var pending: [PendingTransaction] = []
     var errorMessage: String?
 
     @ObservationIgnored private let repository: ExpenseRepository
+    @ObservationIgnored private let pendingStore: PendingTransactionStore?
     @ObservationIgnored private let calendar: Calendar
     @ObservationIgnored private let now: () -> Date
 
     /// `calendar` and `now` are injectable so tests don't depend on the real date.
     init(
         repository: ExpenseRepository,
+        pendingStore: PendingTransactionStore? = nil,
         calendar: Calendar = .current,
         now: @escaping () -> Date = { .now }
     ) {
         self.repository = repository
+        self.pendingStore = pendingStore
         self.calendar = calendar
         self.now = now
     }
@@ -52,14 +48,23 @@ final class DashboardViewModel {
 
     func load() {
         do {
+            // The month card is about spending, so income is left out of every figure on it.
             let monthExpenses = try repository.expenses(in: calendar.monthInterval(containing: now()))
+                .filter { $0.kind == .expense }
             monthTotal = monthExpenses.reduce(0) { $0 + $1.amount }
             monthCount = monthExpenses.count
-            categoryTotals = makeCategoryTotals(from: monthExpenses, monthTotal: monthTotal)
+            categoryTotals = SpendingAnalytics.categoryTotals(of: monthExpenses.map(\.record))
             sections = makeSections(from: try repository.recentExpenses(limit: Self.recentLimit))
         } catch {
             errorMessage = error.localizedDescription
         }
+        pending = pendingStore?.all ?? []
+    }
+
+    /// Drops a queued bank message without logging it. The view reloads through
+    /// `.expenseStoreDidChange`.
+    func ignorePending(_ item: PendingTransaction) {
+        pendingStore?.remove(id: item.id)
     }
 
     /// The view reloads through `.expenseStoreDidChange` after this.
@@ -73,18 +78,6 @@ final class DashboardViewModel {
 
     // MARK: - Private
 
-    private func makeCategoryTotals(from expenses: [Expense], monthTotal: Decimal) -> [CategoryTotal] {
-        guard monthTotal > 0 else { return [] }
-        let totalValue = monthTotal.doubleValue
-
-        return Dictionary(grouping: expenses, by: \.category)
-            .map { category, items in
-                let total = items.reduce(Decimal(0)) { $0 + $1.amount }
-                return CategoryTotal(category: category, total: total, share: total.doubleValue / totalValue)
-            }
-            .sorted { $0.total > $1.total }
-    }
-
     private func makeSections(from expenses: [Expense]) -> [DaySection] {
         let byDay = Dictionary(grouping: expenses) { calendar.startOfDay(for: $0.date) }
 
@@ -94,7 +87,7 @@ final class DashboardViewModel {
                 id: day,
                 title: sectionTitle(for: day),
                 expenses: items,
-                total: items.reduce(0) { $0 + $1.amount }
+                total: items.filter { $0.kind == .expense }.reduce(0) { $0 + $1.amount }
             )
         }
     }

@@ -1,17 +1,28 @@
 import SwiftUI
 
-/// A tinted category glyph on a soft rounded square.
+/// A tinted glyph on a soft rounded square. Used for categories, income, and queued messages.
 struct CategoryIcon: View {
-    let category: ExpenseCategory
+    let symbolName: String
+    let tint: Color
     var size: CGFloat = 44
 
+    init(symbolName: String, tint: Color, size: CGFloat = 44) {
+        self.symbolName = symbolName
+        self.tint = tint
+        self.size = size
+    }
+
+    init(category: ExpenseCategory, size: CGFloat = 44) {
+        self.init(symbolName: category.symbolName, tint: category.tint, size: size)
+    }
+
     var body: some View {
-        Image(systemName: category.symbolName)
+        Image(systemName: symbolName)
             .font(.system(size: size * 0.42, weight: .semibold))
-            .foregroundStyle(category.tint)
+            .foregroundStyle(tint)
             .frame(width: size, height: size)
             .background(
-                category.tint.opacity(0.15),
+                tint.opacity(0.15),
                 in: RoundedRectangle(cornerRadius: size * 0.3, style: .continuous)
             )
             .accessibilityHidden(true)
