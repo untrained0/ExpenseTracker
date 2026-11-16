@@ -133,6 +133,23 @@ Empty state: `ContentUnavailableView` that says "No expenses yet" and points the
 Dialog: "Logged ₹250.00 for Food."
 ```
 
+### 6.4 Insights (pushed from the dashboard's chart button)
+
+Cards in the dashboard's card style (radius 28, 20 pt padding), top to bottom:
+
+1. **Spent**: 44 pt rounded total, then "12% more than October" (secondary, with an arrow) or the expense count when there's no previous month. Below a divider: Income · Net · Daily average.
+2. **Daily spending**: one accent-colored column per day. Drag across the chart to read a day; with nothing selected the readout shows the highest day.
+3. **By category**: ranked rows — category icon, name, amount, a bar in the category tint scaled to the largest category, and the share of the month. Not a donut: ten categories don't read in one.
+4. **Last 6 months**: columns ending with the selected month, which is the only one in accent and the only one labelled; the rest are `systemGray3`.
+
+The month switcher (‹ November 2026 ›) is a 56 pt material capsule at the bottom, in the thumb zone. "Next" is disabled on the current month. Chart axes use short labels ("₹2K"); all other text stays in primary/secondary ink, never the bar color.
+
+### 6.5 Review queue and income
+
+- **Needs review** is the first dashboard section when bank messages are waiting: envelope icon (accent), two lines of the message, amount if one was read. Tap opens Add Expense prefilled, with the message shown above the amount. Swipe to ignore.
+- **Add sheet header:** ✕ · Expense/Income segmented control · date. Income hides the category chips and uses the income tint (mint).
+- **Income rows:** mint `arrow.down.left` icon, amount prefixed with `+`. Income never counts toward the month total, share bar, or day totals.
+
 ## 7. Motion
 
 | Moment | Animation |

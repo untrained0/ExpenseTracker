@@ -9,7 +9,7 @@ These rules are binding. If a rule blocks a good idea, change the rule here firs
 3. **ViewModels** are `@MainActor @Observable final class`. They own screen state and call the repository. They never import SwiftUI except where a SwiftUI type is part of the state, and they never hold a `View`.
 4. **Repository** (`ExpenseRepository`) is the **only** type that touches `ModelContext`. Every write goes through it so the change notification always fires.
 5. **Models** hold data and have no dependencies on UI frameworks. Presentation-only extensions (colors) live in `Views/Components/`.
-6. **Dependency injection by initializer.** No service locators. The only singletons allowed are `PersistenceController.shared` and `AppRouter.shared`, and they exist because App Intents have no view hierarchy to inject through.
+6. **Dependency injection by initializer.** No service locators. The only singletons allowed are `PersistenceController.shared` and `AppRouter.shared`, and they exist because App Intents have no view hierarchy to inject through. Intents build their services through `TransactionCaptureService.forIntents()`, which wires those same singletons.
 7. Pure logic (like `AmountInput`) goes into value types in `Utilities/` so it can be unit tested without SwiftData.
 
 ## 2. SwiftData
@@ -37,6 +37,7 @@ These rules are binding. If a rule blocks a good idea, change the rule here firs
 2. Every App Shortcut phrase must contain `\(.applicationName)`.
 3. Intents that open the app **only change `AppRouter` state**. They never build views or navigate directly.
 4. Intents that don't open the app must finish quickly (< ~5 s), must not depend on UI state, and must return a dialog so Siri and the Action Button give audible or visible confirmation.
+   **Exception (2026-11-16):** intents built to run unattended inside Shortcuts automations (`CaptureTransactionIntent`, `SetExpensePromptsIntent`) and Focus filters return a value or nothing instead. A dialog there would pop up over whatever the user is doing every time a bank message arrives, which is exactly what the feature must avoid.
 5. Snippet views take plain values, not `@Model` objects or environment dependencies.
 6. When renaming an intent type, keep the old one around (hidden with `isDiscoverable = false`) for a release, because users' Shortcuts reference it by type name.
 

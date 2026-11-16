@@ -74,18 +74,45 @@ Action Button press
               └─► .result(dialog: "Logged ₹250.00 for Food.", view: ExpenseSnippetView)
 ```
 
-## 6. Folder map
+## 6. Bank message → transaction (automatic capture)
+
+```
+Bank SMS arrives
+  └─► Shortcuts personal automation ("Message contains debited", Run Immediately)
+        └─► CaptureTransactionIntent(message: Shortcut Input)   openAppWhenRun = false
+              └─► TransactionCaptureService.capture(message:)
+                    ├─ TransactionMessageParser.parse → nil ............ ignored
+                    ├─ PendingTransactionStore.isDuplicate ............. ignored
+                    ├─ amount readable, home currency
+                    │     └─► ExpenseRepository.add(kind: .expense / .income)   (no prompt)
+                    └─ amount missing or foreign currency
+                          └─► PendingTransactionStore.enqueue
+                                ├─ prompts not held → TransactionPromptNotifier (local notification)
+                                └─ prompts held ....→ stays unannounced
+
+Game opened / Gaming Focus on  ─► SetExpensePromptsIntent(hold: true)  / ExpensePromptsFocusFilter
+Game closed / Focus off        ─► hold = false ─► one notification for everything unannounced
+
+Notification tap ─► TransactionPromptNotifier (delegate) ─► AppRouter.presentPending
+                      └─► AddExpenseView prefilled; saving removes the queue entry
+```
+
+The queue and the hold flag live in `UserDefaults`, so the app's `PendingTransactionStore` and the one an intent creates see the same state. Dependencies still point downward: the notifier (Services) reaches the router only through a closure the App installs.
+
+## 7. Folder map
 
 | Folder | Contents |
 |---|---|
 | `App/` | `ExpenseTrackerApp`, `RootView`, `AppRouter` |
-| `Models/` | `Expense`, `ExpenseCategory` |
-| `ViewModels/` | `DashboardViewModel` (+ `DaySection`, `CategoryTotal`), `AddExpenseViewModel` |
-| `Views/Dashboard/` | `DashboardView`, `MonthSummaryCard`, `ExpenseRowView` |
+| `Models/` | `Expense`, `ExpenseCategory`, `TransactionKind`, `PendingTransaction` |
+| `ViewModels/` | `DashboardViewModel` (+ `DaySection`), `AddExpenseViewModel`, `InsightsViewModel`, `CaptureSetupViewModel` |
+| `Views/Dashboard/` | `DashboardView`, `MonthSummaryCard`, `ExpenseRowView`, `PendingTransactionRow` |
+| `Views/Insights/` | `InsightsView`, `InsightsSummaryCard`, `DailySpendChart`, `CategoryBreakdownList`, `MonthTrendChart`, `InsightsCard`, `ChartAmount` |
+| `Views/Capture/` | `CaptureSetupView` |
 | `Views/AddExpense/` | `AddExpenseView`, `AmountDisplayView`, `KeypadView`, `CategoryPickerView` |
-| `Views/Components/` | `CategoryIcon`, `ExpenseCategory+Style` |
-| `Services/` | `PersistenceController`, `ExpenseRepository` |
-| `Intents/` | `AddExpenseIntent`, `LogExpenseIntent`, `ExpenseCategory+AppEnum`, `ExpenseTrackerShortcuts`, `ExpenseSnippetView` |
-| `Utilities/` | `AmountInput` (+ `KeypadKey`), `Formatters`, `Calendar+Month`, `Haptics` |
+| `Views/Components/` | `CategoryIcon`, `ExpenseCategory+Style`, `TransactionKind+Style` |
+| `Services/` | `PersistenceController`, `ExpenseRepository`, `PendingTransactionStore`, `TransactionCaptureService`, `TransactionPrompting`, `TransactionPromptNotifier` |
+| `Intents/` | `AddExpenseIntent`, `LogExpenseIntent`, `CaptureTransactionIntent`, `SetExpensePromptsIntent`, `ExpensePromptsFocusFilter`, `TransactionCaptureService+Intents`, `ExpenseCategory+AppEnum`, `ExpenseTrackerShortcuts`, `ExpenseSnippetView` |
+| `Utilities/` | `AmountInput` (+ `KeypadKey`), `TransactionMessageParser`, `MerchantCategorizer`, `SpendingAnalytics`, `Formatters`, `Calendar+Month`, `Haptics` |
 | `PreviewSupport/` | `PreviewData` (DEBUG) |
 | `Resources/` | `Info.plist`, `PrivacyInfo.xcprivacy`, `Assets.xcassets` |

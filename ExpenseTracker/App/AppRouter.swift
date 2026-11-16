@@ -7,11 +7,20 @@ struct AddExpenseRequest: Identifiable, Equatable {
         case inApp
         case appIntent
         case url
+        /// Reviewing a bank message that couldn't be logged automatically.
+        case pending
     }
 
     let id = UUID()
     var category: ExpenseCategory?
     var amount: Decimal?
+    var kind: TransactionKind = .expense
+    var note: String?
+    var date: Date?
+    /// The review-queue entry to remove once this is saved.
+    var pendingID: UUID?
+    /// The bank message being reviewed, shown above the amount.
+    var sourceMessage: String?
     var source: Source
 }
 
@@ -39,6 +48,21 @@ final class AppRouter {
     ) {
         guard addExpenseRequest == nil else { return }
         addExpenseRequest = AddExpenseRequest(category: category, amount: amount, source: source)
+    }
+
+    /// Opens the Add sheet prefilled with whatever was readable in a queued bank message.
+    func presentPending(_ pending: PendingTransaction) {
+        guard addExpenseRequest == nil else { return }
+        addExpenseRequest = AddExpenseRequest(
+            category: pending.category,
+            amount: pending.amount,
+            kind: pending.kind ?? .expense,
+            note: pending.merchant,
+            date: pending.receivedAt,
+            pendingID: pending.id,
+            sourceMessage: pending.message,
+            source: .pending
+        )
     }
 
     /// Handles `expensetracker://add?category=food&amount=250`.

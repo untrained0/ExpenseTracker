@@ -1,7 +1,8 @@
 import Foundation
 import SwiftData
 
-/// A single spending record.
+/// A single transaction: money spent, or (when `kind == .income`) money received.
+/// The type keeps its original name because renaming a SwiftData entity needs a migration.
 ///
 /// The model is kept CloudKit-compatible (see docs/RULES.md §2) so iCloud sync can be
 /// enabled later without a migration: every stored property has a default value,
@@ -20,13 +21,16 @@ final class Expense {
     var categoryRawValue: String = ExpenseCategory.other.rawValue
     var note: String?
     var createdAt: Date = Date.now
+    /// Backing storage for `kind`. Rows saved before income existed read as "expense".
+    var kindRawValue: String = TransactionKind.expense.rawValue
 
     init(
         id: UUID = UUID(),
         amount: Decimal,
         date: Date = .now,
         category: ExpenseCategory,
-        note: String? = nil
+        note: String? = nil,
+        kind: TransactionKind = .expense
     ) {
         self.id = id
         self.amount = amount
@@ -34,6 +38,12 @@ final class Expense {
         self.categoryRawValue = category.rawValue
         self.note = note
         self.createdAt = .now
+        self.kindRawValue = kind.rawValue
+    }
+
+    var kind: TransactionKind {
+        get { TransactionKind(rawValue: kindRawValue) ?? .expense }
+        set { kindRawValue = newValue.rawValue }
     }
 
     var category: ExpenseCategory {
@@ -41,9 +51,14 @@ final class Expense {
         set { categoryRawValue = newValue.rawValue }
     }
 
-    /// The note if there is one, otherwise the category name.
+    /// The note if there is one, otherwise the category name ("Income" for money received).
     var displayTitle: String {
         if let note, !note.isEmpty { return note }
-        return category.title
+        return kind == .income ? TransactionKind.income.title : category.title
+    }
+
+    /// A plain-value copy for `SpendingAnalytics`.
+    var record: TransactionRecord {
+        TransactionRecord(amount: amount, date: date, category: category, kind: kind)
     }
 }
